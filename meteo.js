@@ -1,24 +1,23 @@
-const readline = require('readline'); // Pour interagir avec l'utilisateur dans le terminal
-const axios = require('axios'); // Pour effectuer des requêtes HTTP
+const readline = require('readline');
+const axios = require('axios');
 
-// Clé API OpenWeatherMap
-const API_KEY = '1840c74e8c1419f107e336e09906c447';
+const API_KEY = '1840c74e8c1419f107e336e09906c447'; // Ta clé API
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
+const BASE_URL_FORECAST = 'https://api.openweathermap.org/data/2.5/forecast';
 
-// Configuration pour demander une entrée utilisateur
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-// Fonction pour récupérer la météo d'une ville
+// Fonction pour la météo actuelle
 const getWeather = async (city) => {
     try {
         const response = await axios.get(BASE_URL, {
             params: {
-                q: city, // Nom de la ville
-                appid: API_KEY, // Clé API
-                units: 'metric', // Unités métriques (Celsius)
+                q: city,
+                appid: API_KEY,
+                units: 'metric',
             },
         });
 
@@ -27,22 +26,54 @@ const getWeather = async (city) => {
         console.log(`🌡️ Température : ${main.temp}°C`);
         console.log(`☁️ Condition : ${weather[0].description}`);
     } catch (error) {
-        if (error.response && error.response.status === 404) {
-            console.error('\n❌ Ville introuvable. Vérifiez le nom.');
-        } else if (error.response && error.response.status === 401) {
-            console.error('\n❌ Clé API invalide ou non autorisée.');
-        } else {
-            console.error('\n❌ Une erreur est survenue :', error.message);
-        }
+        console.error('\n❌ Erreur : Impossible de récupérer les données météo.');
     }
 };
 
-// Fonction principale pour lancer le programme
+// Fonction pour les prévisions météo
+const getWeatherForecast = async (city) => {
+    try {
+        const response = await axios.get(BASE_URL_FORECAST, {
+            params: {
+                q: city,
+                appid: API_KEY,
+                units: 'metric',
+            },
+        });
+
+        const forecast = response.data.list;
+        console.log(`\n🌤️ Prévisions météo pour ${city} :\n`);
+
+        // Affiche une prévision par jour
+        forecast.forEach((item, index) => {
+            if (index % 8 === 0) {
+                console.log(`📅 ${item.dt_txt} :`);
+                console.log(`   🌡️ Température : ${item.main.temp}°C`);
+                console.log(`   ☁️ Condition : ${item.weather[0].description}\n`);
+            }
+        });
+    } catch (error) {
+        console.error('\n❌ Erreur : Impossible de récupérer les prévisions.');
+    }
+};
+
+// Fonction principale
 const startApp = () => {
     console.log('\n🌤️ Bienvenue dans l\'appli météo CLI 🌤️');
     rl.question('👉 Entrez le nom d\'une ville : ', async (city) => {
-        await getWeather(city.trim());
-        rl.close();
+        console.log('\nQue souhaitez-vous faire ?');
+        console.log('1️⃣ Météo actuelle');
+        console.log('2️⃣ Prévisions sur 5 jours');
+        rl.question('👉 Choisissez une option (1 ou 2) : ', async (option) => {
+            if (option === '1') {
+                await getWeather(city.trim());
+            } else if (option === '2') {
+                await getWeatherForecast(city.trim());
+            } else {
+                console.log('❌ Option invalide. Veuillez choisir 1 ou 2.');
+            }
+            rl.close();
+        });
     });
 };
 
